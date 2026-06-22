@@ -12,6 +12,9 @@ local.properties
 *.apk
 *.aab
 
+# Local upload keys
+.github_upload_key*
+
 # Logs and temporary files
 *.log
 *.tmp
