@@ -10,6 +10,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
@@ -65,6 +66,7 @@ public class MainActivity extends Activity {
     private static final String PREF_BAIDU_APP_ID = "baidu_app_id";
     private static final String PREF_BAIDU_SECRET_KEY = "baidu_secret_key";
     private static final String PREF_SCRIPT = "script";
+    private static final String PREF_SAVED_SCRIPTS = "saved_scripts";
     private static final String PREF_COLOR_SPEED = "color_speed";
     private static final String PREF_AUTO_SPEED = "auto_speed";
     private static final String PREF_SCROLL_SPEED = "scroll_speed";
@@ -77,6 +79,7 @@ public class MainActivity extends Activity {
     private static final String BUILT_IN_BAIDU_SECRET_KEY = "";
 
     private TextView statusView;
+    private TextView testResultView;
     private TextView promptView;
     private TextView titleView;
     private String scriptText = "";
@@ -88,6 +91,7 @@ public class MainActivity extends Activity {
     private Button pauseButton;
     private Button fullscreenButton;
     private Button backHomeButton;
+    private Button settingsFloatButton;
     private Button autoScrollButton;
 
     private SpeechRecognizer speechRecognizer;
@@ -108,10 +112,12 @@ public class MainActivity extends Activity {
     private boolean prompterMode;
     private boolean startAfterPermission;
     private boolean testAfterPermission;
+
     private String savedBaiduAppId = "";
     private String savedBaiduApiKey = "";
     private String savedBaiduSecretKey = "";
     private String realtimeFinalText = "";
+    private ArrayList<String> savedScripts = new ArrayList<String>();
     private String normalizedScript = "";
     private int colorStep = 1;
     private int autoAdvanceStep = 1;
@@ -152,13 +158,13 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         loadSettings();
         buildUi();
-        speechServiceAvailable = false;
+        setupSpeechRecognizer();
         renderScript();
     }
 
     private void buildUi() {
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(245, 247, 248));
+        root.setBackgroundColor(Color.rgb(241, 247, 246));
         setContentView(root);
 
         promptScroll = new ScrollView(this);
@@ -173,74 +179,145 @@ public class MainActivity extends Activity {
         promptView = new TextView(this);
         promptView.setTextSize(promptFontSize);
         promptView.setTextColor(Color.rgb(235, 240, 242));
-        promptView.setLineSpacing(dp(12), 1.22f);
+        promptView.setLineSpacing(dp(10), 1.28f);
         promptView.setGravity(Gravity.START);
-        promptView.setPadding(dp(24), dp(120), dp(28), dp(260));
+        promptView.setPadding(dp(28), dp(124), dp(30), dp(280));
         promptView.setOnClickListener(view -> togglePlayPauseFromPrompt());
         promptScroll.setOnClickListener(view -> togglePlayPauseFromPrompt());
         promptScroll.addView(promptView, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         homeScroll = new ScrollView(this);
         homeScroll.setFillViewport(true);
-        homeScroll.setBackgroundColor(Color.argb(245, 245, 247, 248));
+        homeScroll.setBackgroundColor(Color.rgb(241, 247, 246));
         root.addView(homeScroll, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         homePanel = new LinearLayout(this);
         homePanel.setOrientation(LinearLayout.VERTICAL);
-        homePanel.setPadding(dp(18), dp(18), dp(18), dp(18));
+        homePanel.setPadding(dp(18), dp(22), dp(18), dp(22));
         homeScroll.addView(homePanel, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         controlsPanel = new LinearLayout(this);
         controlsPanel.setOrientation(LinearLayout.VERTICAL);
-        controlsPanel.setPadding(dp(10), dp(8), dp(10), dp(10));
-        controlsPanel.setBackgroundColor(Color.argb(228, 245, 247, 248));
+        controlsPanel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        controlsPanel.setBackgroundResource(R.drawable.control_bar);
         FrameLayout.LayoutParams controlParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         controlParams.gravity = Gravity.BOTTOM;
         controlParams.setMargins(dp(10), 0, dp(10), dp(10));
         root.addView(controlsPanel, controlParams);
+        controlsPanel.setVisibility(View.GONE);
 
-        backHomeButton = makeButton(getString(R.string.button_back_home));
-        FrameLayout.LayoutParams backHomeParams = new FrameLayout.LayoutParams(dp(108), dp(42));
-        backHomeParams.gravity = Gravity.TOP | Gravity.START;
-        backHomeParams.setMargins(dp(12), dp(12), 0, 0);
-        root.addView(backHomeButton, backHomeParams);
-        backHomeButton.setVisibility(View.GONE);
+        backHomeButton = makeSecondaryButton(getString(R.string.button_back_home));
+        settingsFloatButton = makeButton("...");
+        settingsFloatButton.setTextSize(14);
+        settingsFloatButton.setPadding(dp(14), 0, dp(14), 0);
+        settingsFloatButton.setMinWidth(0);
+        settingsFloatButton.setMinHeight(0);
+        FrameLayout.LayoutParams floatParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+        floatParams.gravity = Gravity.TOP | Gravity.END;
+        floatParams.setMargins(0, dp(50), dp(16), 0);
+        root.addView(settingsFloatButton, floatParams);
+        settingsFloatButton.setVisibility(View.GONE);
+
+        TextView appTag = makeText(getString(R.string.label_app_tag), 13, Color.rgb(15, 139, 141), Typeface.BOLD);
+        homePanel.addView(appTag, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         titleView = new TextView(this);
         titleView.setText(R.string.title_main);
-        titleView.setTextSize(24);
-        titleView.setTextColor(Color.rgb(23, 32, 38));
-        titleView.setGravity(Gravity.CENTER_VERTICAL);
-        homePanel.addView(titleView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        titleView.setTextSize(29);
+        titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleView.setTextColor(Color.rgb(16, 26, 31));
+        titleView.setGravity(Gravity.START);
+        titleView.setIncludeFontPadding(false);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.setMargins(0, dp(8), 0, dp(8));
+        homePanel.addView(titleView, titleParams);
+
+        TextView subtitleView = makeText(getString(R.string.subtitle_main), 15, Color.rgb(85, 99, 106), Typeface.NORMAL);
+        subtitleView.setLineSpacing(dp(3), 1.1f);
+        LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        subtitleParams.setMargins(0, 0, 0, dp(16));
+        homePanel.addView(subtitleView, subtitleParams);
+
+
+
+
 
         statusView = new TextView(this);
-        statusView.setText(R.string.status_ready);
-        statusView.setTextSize(15);
-        statusView.setTextColor(Color.rgb(93, 105, 115));
-        homePanel.addView(statusView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        // statusView is removed from home page but kept for prompter mode feedback
 
-        LinearLayout homeButtons = new LinearLayout(this);
-        homeButtons.setOrientation(LinearLayout.VERTICAL);
-        homePanel.addView(homeButtons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+
+
+
+        Button scriptButton = makeSecondaryButton(getString(R.string.button_script));
+        Button settingsButton = makeSecondaryButton(getString(R.string.button_settings));
+        Button followSettingsButton = makeSecondaryButton(getString(R.string.button_follow_settings));
+        Button displaySettingsButton = makeSecondaryButton(getString(R.string.button_display_settings));
+        Button enterPrompterButton = makeButton(getString(R.string.button_enter_prompter));
+        // 第一步：设置识别密钥
+        LinearLayout step1Card = makeCard();
+        TextView step1Title = makeText(getString(R.string.label_setup_section), 17, Color.rgb(16, 26, 31), Typeface.BOLD);
+        step1Card.addView(step1Title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams singleBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+        singleBtnParams.setMargins(0, dp(8), 0, 0);
+        step1Card.addView(settingsButton, singleBtnParams);
+        homePanel.addView(step1Card, cardParams());
+
+        // 第二步：测试麦克风
+        Button testButton = makeButton(getString(R.string.button_mic_test));
+        testButton.setTextSize(16);
+        LinearLayout micTestCard = makeCard();
+        TextView micTestTitle = makeText(getString(R.string.label_mic_test), 17, Color.rgb(16, 26, 31), Typeface.BOLD);
+        micTestCard.addView(micTestTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams testBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(60));
+        testBtnParams.setMargins(0, dp(10), 0, dp(6));
+        micTestCard.addView(testButton, testBtnParams);
+        testResultView = new TextView(this);
+        testResultView.setTextSize(13);
+        testResultView.setTextColor(Color.rgb(85, 99, 106));
+        testResultView.setLineSpacing(dp(4), 1.0f);
+        testResultView.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams resultParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        resultParams.setMargins(0, dp(2), 0, dp(6));
+        micTestCard.addView(testResultView, resultParams);
+        homePanel.addView(micTestCard, cardParams());
+
+        // 第三步：导入与设置
+        LinearLayout step3Card = makeCard();
+        TextView step3Title = makeText(getString(R.string.label_step3), 17, Color.rgb(16, 26, 31), Typeface.BOLD);
+        step3Card.addView(step3Title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout step3Row1 = new LinearLayout(this);
+        step3Row1.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+        rowParams.setMargins(0, dp(8), 0, 0);
+        LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        cellParams.setMargins(dp(3), 0, dp(3), 0);
+        step3Row1.addView(scriptButton, cellParams);
+        step3Row1.addView(followSettingsButton, cellParams);
+        step3Row1.addView(displaySettingsButton, cellParams);
+        step3Card.addView(step3Row1, rowParams);
+        homePanel.addView(step3Card, cardParams());
+
+
+        // 第四步：进入提词
+                enterPrompterButton.setTextSize(15);
+        LinearLayout.LayoutParams enterParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
+        enterParams.setMargins(0, dp(4), 0, dp(20));
+        homePanel.addView(enterPrompterButton, enterParams);
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
         buttons.setGravity(Gravity.CENTER_VERTICAL);
-        controlsPanel.addView(buttons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(44)));
+        controlsPanel.addView(buttons, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48)));
 
-        Button testButton = makeButton(getString(R.string.button_mic_test));
+        
         startButton = makeButton(getString(R.string.button_start));
-        pauseButton = makeButton(getString(R.string.button_pause));
-        Button resetButton = makeButton(getString(R.string.button_reset));
-        Button settingsButton = makeButton(getString(R.string.button_settings));
-        Button scriptButton = makeButton(getString(R.string.button_script));
-        Button followSettingsButton = makeButton(getString(R.string.button_follow_settings));
-        Button displaySettingsButton = makeButton(getString(R.string.button_display_settings));
-        Button enterPrompterButton = makeButton(getString(R.string.button_enter_prompter));
-        fullscreenButton = makeButton(getString(R.string.button_full_landscape));
-        autoScrollButton = makeButton(getString(R.string.button_auto_scroll));
-        Button backButton = makeButton(getString(R.string.button_back));
-        Button forwardButton = makeButton(getString(R.string.button_forward));
+        pauseButton = makeSecondaryButton(getString(R.string.button_pause));
+        Button resetButton = makeSecondaryButton(getString(R.string.button_reset));
+                                                fullscreenButton = makeSecondaryButton(getString(R.string.button_full_landscape));
+        autoScrollButton = makeSecondaryButton(getString(R.string.button_auto_scroll));
+        Button backButton = makeSecondaryButton(getString(R.string.button_back));
+        Button forwardButton = makeSecondaryButton(getString(R.string.button_forward));
         pauseButton.setEnabled(false);
 
         buttons.addView(startButton, smallButtonParams());
@@ -250,17 +327,14 @@ public class MainActivity extends Activity {
         buttons.addView(autoScrollButton, smallButtonParams());
         buttons.addView(backButton, smallButtonParams());
         buttons.addView(forwardButton, smallButtonParams());
+        buttons.addView(backHomeButton, smallButtonParams());
 
-        homeButtons.addView(testButton, verticalButtonParams());
-        homeButtons.addView(scriptButton, verticalButtonParams());
-        homeButtons.addView(settingsButton, verticalButtonParams());
-        homeButtons.addView(followSettingsButton, verticalButtonParams());
-        homeButtons.addView(displaySettingsButton, verticalButtonParams());
-        homeButtons.addView(enterPrompterButton, verticalButtonParams());
+
 
         testButton.setOnClickListener(view -> testMic());
         enterPrompterButton.setOnClickListener(view -> enterPrompterMode());
         backHomeButton.setOnClickListener(view -> enterHomeMode());
+        settingsFloatButton.setOnClickListener(view -> showPrompterSettingsDialog());
         startButton.setOnClickListener(view -> startReading());
         pauseButton.setOnClickListener(view -> stopReading());
         resetButton.setOnClickListener(view -> resetReading());
@@ -277,16 +351,51 @@ public class MainActivity extends Activity {
     }
 
     private Button makeButton(String text) {
+        return makeStyledButton(text, true);
+    }
+
+    private Button makeSecondaryButton(String text) {
+        return makeStyledButton(text, false);
+    }
+
+    private Button makeStyledButton(String text, boolean primary) {
         Button button = new Button(this);
         button.setText(text);
-        button.setTextSize(14);
+        button.setTextSize(13);
         button.setAllCaps(false);
-        button.setTextColor(Color.WHITE);
-        button.setBackgroundResource(R.drawable.button_primary);
-        button.setElevation(dp(4));
+        button.setTextColor(primary ? Color.WHITE : Color.rgb(30, 45, 52));
+        button.setBackgroundResource(primary ? R.drawable.button_primary : R.drawable.button_secondary);
+        button.setElevation(primary ? dp(3) : 0);
         button.setStateListAnimator(null);
+        button.setMinHeight(0);
+        button.setMinWidth(0);
+        button.setIncludeFontPadding(false);
         button.setPadding(dp(6), 0, dp(6), 0);
         return button;
+    }
+
+    private TextView makeText(String text, int textSize, int textColor, int typefaceStyle) {
+        TextView textView = new TextView(this);
+        textView.setText(text);
+        textView.setTextSize(textSize);
+        textView.setTextColor(textColor);
+        textView.setTypeface(Typeface.DEFAULT, typefaceStyle);
+        return textView;
+    }
+
+    private LinearLayout makeCard() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(15), dp(16), dp(15));
+        card.setBackgroundResource(R.drawable.panel_card);
+        card.setClipToOutline(false);
+        return card;
+    }
+
+    private LinearLayout.LayoutParams cardParams() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 0, dp(14));
+        return params;
     }
 
     private LinearLayout.LayoutParams buttonParams() {
@@ -303,7 +412,7 @@ public class MainActivity extends Activity {
 
     private LinearLayout.LayoutParams verticalButtonParams() {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54));
-        params.setMargins(0, dp(6), 0, dp(6));
+        params.setMargins(0, dp(5), 0, dp(5));
         return params;
     }
 
@@ -311,6 +420,8 @@ public class MainActivity extends Activity {
         prompterMode = true;
         homeScroll.setVisibility(View.GONE);
         controlsPanel.setVisibility(View.VISIBLE);
+        backHomeButton.setVisibility(View.VISIBLE);
+        settingsFloatButton.setVisibility(View.VISIBLE);
         statusView.setText(R.string.status_tap_mic);
         applyOrientationLayout();
     }
@@ -332,6 +443,7 @@ public class MainActivity extends Activity {
         homeScroll.setVisibility(View.VISIBLE);
         controlsPanel.setVisibility(View.GONE);
         backHomeButton.setVisibility(View.GONE);
+        settingsFloatButton.setVisibility(View.GONE);
         statusView.setText(R.string.status_ready);
         promptScroll.postDelayed(this::applyOrientationLayout, 350);
     }
@@ -380,6 +492,7 @@ public class MainActivity extends Activity {
         savedBaiduAppId = prefs.getString(PREF_BAIDU_APP_ID, "");
         savedBaiduSecretKey = prefs.getString(PREF_BAIDU_SECRET_KEY, "");
         scriptText = prefs.getString(PREF_SCRIPT, getString(R.string.default_script));
+        loadSavedScripts();
         colorStep = prefs.getInt(PREF_COLOR_SPEED, 1);
         autoAdvanceStep = prefs.getInt(PREF_AUTO_SPEED, 1);
         scrollSpeed = prefs.getInt(PREF_SCROLL_SPEED, 1);
@@ -389,7 +502,19 @@ public class MainActivity extends Activity {
         backgroundColor = prefs.getInt(PREF_BACKGROUND_COLOR, Color.rgb(17, 24, 29));
     }
 
-    private void showSettingsDialog() {
+    private void showPrompterSettingsDialog() {
+        String[] options = {getString(R.string.button_display_settings), getString(R.string.button_follow_settings), getString(R.string.button_script)};
+        new AlertDialog.Builder(this)
+            .setTitle("快捷设置")
+            .setItems(options, (dialog, which) -> {
+                if (which == 0) showDisplaySettingsDialog();
+                else if (which == 1) showFollowSettingsDialog();
+                else showScriptDialog();
+            })
+            .show();
+    }
+
+        private void showSettingsDialog() {
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(18), dp(8), dp(18), 0);
@@ -432,15 +557,60 @@ public class MainActivity extends Activity {
     }
 
     private void showScriptDialog() {
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.VERTICAL);
+        dialogLayout.setPadding(dp(18), dp(8), dp(18), dp(8));
+
         EditText scriptField = new EditText(this);
+
+        // Add current script to front of list for display
+        ArrayList<String> displayScripts = new ArrayList<String>(savedScripts);
+        if (!displayScripts.contains(scriptText)) {
+            displayScripts.add(0, scriptText);
+        }
+        
+        TextView historyLabel = new TextView(this);
+        historyLabel.setText("历史稿件（点击加载）");
+        historyLabel.setTextSize(14);
+        historyLabel.setTextColor(Color.rgb(104, 119, 126));
+        historyLabel.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        historyLabel.setPadding(dp(4), dp(4), dp(4), dp(6));
+        dialogLayout.addView(historyLabel);
+
+        for (int i = 0; i < displayScripts.size() && i < 6; i++) {
+            String preview = displayScripts.get(i).length() > 28 ? displayScripts.get(i).substring(0, 28) + "..." : displayScripts.get(i);
+            TextView item = new TextView(this);
+            item.setText("· " + preview);
+            item.setTextSize(13);
+            item.setTextColor(Color.rgb(15, 139, 141));
+            item.setPadding(dp(6), dp(5), dp(6), dp(5));
+            final int idx = i;
+            item.setOnClickListener(v -> {
+                scriptText = displayScripts.get(idx);
+                scriptField.setText(scriptText);
+                renderScript();
+                statusView.setText("已加载历史稿件");
+            });
+            dialogLayout.addView(item);
+        }
+
+        View divider = new View(this);
+        divider.setBackgroundColor(Color.rgb(210, 216, 222));
+        LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(1));
+        divParams.setMargins(0, dp(6), 0, dp(8));
+        dialogLayout.addView(divider, divParams);
+
+
         scriptField.setText(scriptText);
         scriptField.setMinLines(8);
         scriptField.setGravity(Gravity.TOP);
         scriptField.setPadding(dp(18), dp(8), dp(18), dp(8));
+        dialogLayout.addView(scriptField);
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_script)
-            .setView(scriptField)
+            .setView(dialogLayout)
             .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
                 scriptText = scriptField.getText().toString();
                 readIndex = 0;
@@ -449,11 +619,32 @@ public class MainActivity extends Activity {
                     .edit()
                     .putString(PREF_SCRIPT, scriptText)
                     .apply();
+                saveScriptToHistory(scriptText);
                 statusView.setText(R.string.script_saved);
                 renderScript();
             })
             .setNegativeButton(R.string.dialog_cancel, null)
             .show();
+    }
+
+    private void loadSavedScripts() {
+        String saved = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(PREF_SAVED_SCRIPTS, "[]");
+        try {
+            org.json.JSONArray arr = new org.json.JSONArray(saved);
+            savedScripts = new ArrayList<>();
+            for (int i = 0; i < arr.length(); i++) savedScripts.add(arr.getString(i));
+        } catch (Exception e) {
+            savedScripts = new ArrayList<>();
+        }
+    }
+
+    private void saveScriptToHistory(String script) {
+        savedScripts.remove(script);
+        savedScripts.add(0, script);
+        if (savedScripts.size() > 10) savedScripts = new ArrayList<>(savedScripts.subList(0, 10));
+        org.json.JSONArray arr = new org.json.JSONArray();
+        for (String s : savedScripts) arr.put(s);
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(PREF_SAVED_SCRIPTS, arr.toString()).apply();
     }
 
     private void showFollowSettingsDialog() {
@@ -678,6 +869,7 @@ public class MainActivity extends Activity {
             homeScroll.setVisibility(View.GONE);
             controlsPanel.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
             backHomeButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
+            settingsFloatButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
             promptView.setPadding(dp(40), dp(120), dp(42), dp(160));
             promptView.setTextSize(Math.max(34, promptView.getTextSize() / getResources().getDisplayMetrics().scaledDensity));
             return;
@@ -686,6 +878,7 @@ public class MainActivity extends Activity {
         homeScroll.setVisibility(prompterMode ? View.GONE : View.VISIBLE);
         controlsPanel.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
         backHomeButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
+        settingsFloatButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
         titleView.setVisibility(landscape ? View.GONE : View.VISIBLE);
         statusView.setMinHeight(landscape ? dp(28) : dp(42));
         promptView.setPadding(
@@ -752,7 +945,13 @@ public class MainActivity extends Activity {
             requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, AUDIO_PERMISSION_REQUEST);
             return;
         }
-        statusView.setText(getString(R.string.status_mic_allowed) + getSpeechServiceSummary());
+        String baiduKey = getBaiduApiKey();
+        String baiduAppId = getBaiduAppId();
+        boolean keysOk = !baiduKey.isEmpty() && !baiduAppId.isEmpty();
+        String keyStatus = keysOk ? "✓ 识别密钥已设置" : "✗ 识别密钥未设置，请先点击设置填写";
+        String micStatus = getString(R.string.status_mic_allowed);
+        statusView.setText(micStatus + "\n" + keyStatus);
+        testResultView.setText(micStatus + "\n" + keyStatus);
     }
 
     private void startReading() {
