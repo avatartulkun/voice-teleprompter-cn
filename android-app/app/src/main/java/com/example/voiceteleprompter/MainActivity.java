@@ -14,6 +14,7 @@ import android.graphics.Typeface;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.content.res.Configuration;
 import android.speech.RecognitionListener;
@@ -30,6 +31,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -74,6 +76,7 @@ public class MainActivity extends Activity {
     private static final String PREF_READ_COLOR = "read_color";
     private static final String PREF_CURRENT_COLOR = "current_color";
     private static final String PREF_BACKGROUND_COLOR = "background_color";
+    private static final String PREF_AGREEMENT_ACCEPTED = "agreement_accepted";
     private static final String BUILT_IN_BAIDU_API_KEY = "";
     private static final String BUILT_IN_BAIDU_APP_ID = "";
     private static final String BUILT_IN_BAIDU_SECRET_KEY = "";
@@ -92,6 +95,7 @@ public class MainActivity extends Activity {
     private Button fullscreenButton;
     private Button backHomeButton;
     private Button settingsFloatButton;
+    private Button mailFloatButton;
     private Button autoScrollButton;
 
     private SpeechRecognizer speechRecognizer;
@@ -112,6 +116,7 @@ public class MainActivity extends Activity {
     private boolean prompterMode;
     private boolean startAfterPermission;
     private boolean testAfterPermission;
+    private boolean agreementAccepted;
 
     private String savedBaiduAppId = "";
     private String savedBaiduApiKey = "";
@@ -194,7 +199,7 @@ public class MainActivity extends Activity {
         homePanel = new LinearLayout(this);
         homePanel.setOrientation(LinearLayout.VERTICAL);
         homePanel.setPadding(dp(18), dp(22), dp(18), dp(22));
-        homeScroll.addView(homePanel, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        homeScroll.addView(homePanel, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         controlsPanel = new LinearLayout(this);
         controlsPanel.setOrientation(LinearLayout.VERTICAL);
@@ -207,23 +212,34 @@ public class MainActivity extends Activity {
         controlsPanel.setVisibility(View.GONE);
 
         backHomeButton = makeSecondaryButton(getString(R.string.button_back_home));
-        settingsFloatButton = makeButton("...");
+        settingsFloatButton = makeButton("⋮");
         settingsFloatButton.setTextSize(14);
-        settingsFloatButton.setPadding(dp(14), 0, dp(14), 0);
+        settingsFloatButton.setPadding(0, 0, 0, 0);
         settingsFloatButton.setMinWidth(0);
         settingsFloatButton.setMinHeight(0);
-        FrameLayout.LayoutParams floatParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(30));
+        FrameLayout.LayoutParams floatParams = new FrameLayout.LayoutParams(dp(30), dp(30));
         floatParams.gravity = Gravity.TOP | Gravity.END;
-        floatParams.setMargins(0, dp(50), dp(16), 0);
+        floatParams.setMargins(0, dp(42), dp(12), 0);
         root.addView(settingsFloatButton, floatParams);
         settingsFloatButton.setVisibility(View.GONE);
 
-        TextView appTag = makeText(getString(R.string.label_app_tag), 13, Color.rgb(15, 139, 141), Typeface.BOLD);
-        homePanel.addView(appTag, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        mailFloatButton = makeSecondaryButton("✉");
+        mailFloatButton.setTextSize(26);
+        mailFloatButton.setTextColor(Color.rgb(15, 139, 141));
+        mailFloatButton.setBackgroundColor(Color.TRANSPARENT);
+        mailFloatButton.setElevation(0);
+        mailFloatButton.setPadding(0, 0, 0, 0);
+        mailFloatButton.setMinWidth(0);
+        mailFloatButton.setMinHeight(0);
+        mailFloatButton.setContentDescription(getString(R.string.button_feedback_email));
+        FrameLayout.LayoutParams mailParams = new FrameLayout.LayoutParams(dp(48), dp(48));
+        mailParams.gravity = Gravity.BOTTOM | Gravity.END;
+        mailParams.setMargins(0, 0, dp(16), dp(18));
+        root.addView(mailFloatButton, mailParams);
 
         titleView = new TextView(this);
         titleView.setText(R.string.title_main);
-        titleView.setTextSize(29);
+        titleView.setTextSize(22);
         titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         titleView.setTextColor(Color.rgb(16, 26, 31));
         titleView.setGravity(Gravity.START);
@@ -253,12 +269,19 @@ public class MainActivity extends Activity {
         Button settingsButton = makeSecondaryButton(getString(R.string.button_settings));
         Button followSettingsButton = makeSecondaryButton(getString(R.string.button_follow_settings));
         Button displaySettingsButton = makeSecondaryButton(getString(R.string.button_display_settings));
+        Button aboutButton = makeSecondaryButton(getString(R.string.button_about));
         Button enterPrompterButton = makeButton(getString(R.string.button_enter_prompter));
+        enterPrompterButton.setBackgroundResource(R.drawable.enter_circle_button);
+        enterPrompterButton.setTextSize(14);
+        enterPrompterButton.setPadding(dp(8), 0, dp(8), 0);
+        aboutButton.setTextColor(Color.rgb(16, 26, 31));
+        aboutButton.setBackgroundColor(Color.TRANSPARENT);
+        aboutButton.setElevation(0);
         // 第一步：设置识别密钥
         LinearLayout step1Card = makeCard();
         TextView step1Title = makeText(getString(R.string.label_setup_section), 17, Color.rgb(16, 26, 31), Typeface.BOLD);
         step1Card.addView(step1Title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams singleBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+        LinearLayout.LayoutParams singleBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
         singleBtnParams.setMargins(0, dp(8), 0, 0);
         step1Card.addView(settingsButton, singleBtnParams);
         homePanel.addView(step1Card, cardParams());
@@ -269,7 +292,7 @@ public class MainActivity extends Activity {
         LinearLayout micTestCard = makeCard();
         TextView micTestTitle = makeText(getString(R.string.label_mic_test), 17, Color.rgb(16, 26, 31), Typeface.BOLD);
         micTestCard.addView(micTestTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams testBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(60));
+        LinearLayout.LayoutParams testBtnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
         testBtnParams.setMargins(0, dp(10), 0, dp(6));
         micTestCard.addView(testButton, testBtnParams);
         testResultView = new TextView(this);
@@ -298,12 +321,20 @@ public class MainActivity extends Activity {
         step3Card.addView(step3Row1, rowParams);
         homePanel.addView(step3Card, cardParams());
 
+        View topSpacer = new View(this);
+        homePanel.addView(topSpacer, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
-        // 第四步：进入提词
-                enterPrompterButton.setTextSize(15);
-        LinearLayout.LayoutParams enterParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
-        enterParams.setMargins(0, dp(4), 0, dp(20));
+        LinearLayout.LayoutParams enterParams = new LinearLayout.LayoutParams(dp(88), dp(88));
+        enterParams.gravity = Gravity.CENTER_HORIZONTAL;
+        enterParams.setMargins(0, 0, 0, 0);
         homePanel.addView(enterPrompterButton, enterParams);
+
+        View bottomSpacer = new View(this);
+        homePanel.addView(bottomSpacer, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
+
+        LinearLayout.LayoutParams aboutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(36));
+        aboutParams.setMargins(0, 0, 0, 0);
+        homePanel.addView(aboutButton, aboutParams);
 
         LinearLayout buttons = new LinearLayout(this);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -332,9 +363,10 @@ public class MainActivity extends Activity {
 
 
         testButton.setOnClickListener(view -> testMic());
-        enterPrompterButton.setOnClickListener(view -> enterPrompterMode());
+        enterPrompterButton.setOnClickListener(view -> enterPrompterAfterAgreement());
         backHomeButton.setOnClickListener(view -> enterHomeMode());
         settingsFloatButton.setOnClickListener(view -> showPrompterSettingsDialog());
+        mailFloatButton.setOnClickListener(view -> openEmailFeedback());
         startButton.setOnClickListener(view -> startReading());
         pauseButton.setOnClickListener(view -> stopReading());
         resetButton.setOnClickListener(view -> resetReading());
@@ -342,6 +374,7 @@ public class MainActivity extends Activity {
         scriptButton.setOnClickListener(view -> showScriptDialog());
         followSettingsButton.setOnClickListener(view -> showFollowSettingsDialog());
         displaySettingsButton.setOnClickListener(view -> showDisplaySettingsDialog());
+        aboutButton.setOnClickListener(view -> showAboutDialog(false));
         fullscreenButton.setOnClickListener(view -> toggleFullLandscape());
         autoScrollButton.setOnClickListener(view -> toggleAutoScroll());
         backButton.setOnClickListener(view -> nudgeReadIndex(-5));
@@ -363,7 +396,7 @@ public class MainActivity extends Activity {
         button.setText(text);
         button.setTextSize(13);
         button.setAllCaps(false);
-        button.setTextColor(primary ? Color.WHITE : Color.rgb(30, 45, 52));
+        button.setTextColor(Color.WHITE);
         button.setBackgroundResource(primary ? R.drawable.button_primary : R.drawable.button_secondary);
         button.setElevation(primary ? dp(3) : 0);
         button.setStateListAnimator(null);
@@ -422,8 +455,17 @@ public class MainActivity extends Activity {
         controlsPanel.setVisibility(View.VISIBLE);
         backHomeButton.setVisibility(View.VISIBLE);
         settingsFloatButton.setVisibility(View.VISIBLE);
+        mailFloatButton.setVisibility(View.GONE);
         statusView.setText(R.string.status_tap_mic);
         applyOrientationLayout();
+    }
+
+    private void enterPrompterAfterAgreement() {
+        if (agreementAccepted) {
+            enterPrompterMode();
+            return;
+        }
+        showAboutDialog(true);
     }
 
     private void enterHomeMode() {
@@ -444,6 +486,7 @@ public class MainActivity extends Activity {
         controlsPanel.setVisibility(View.GONE);
         backHomeButton.setVisibility(View.GONE);
         settingsFloatButton.setVisibility(View.GONE);
+        mailFloatButton.setVisibility(View.VISIBLE);
         statusView.setText(R.string.status_ready);
         promptScroll.postDelayed(this::applyOrientationLayout, 350);
     }
@@ -500,6 +543,7 @@ public class MainActivity extends Activity {
         readColor = prefs.getInt(PREF_READ_COLOR, Color.rgb(232, 93, 63));
         currentColor = prefs.getInt(PREF_CURRENT_COLOR, Color.rgb(255, 224, 130));
         backgroundColor = prefs.getInt(PREF_BACKGROUND_COLOR, Color.rgb(17, 24, 29));
+        agreementAccepted = prefs.getBoolean(PREF_AGREEMENT_ACCEPTED, false);
     }
 
     private void showPrompterSettingsDialog() {
@@ -537,6 +581,27 @@ public class MainActivity extends Activity {
         secretKeyField.setText(savedBaiduSecretKey);
         form.addView(secretKeyField, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54)));
 
+        TextView keyHelpView = new TextView(this);
+        keyHelpView.setText(R.string.hint_realtime_key_help);
+        keyHelpView.setTextColor(Color.rgb(71, 85, 105));
+        keyHelpView.setTextSize(13);
+        keyHelpView.setLineSpacing(dp(2), 1.0f);
+        LinearLayout.LayoutParams helpTextParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        helpTextParams.setMargins(0, dp(8), 0, 0);
+        form.addView(keyHelpView, helpTextParams);
+
+        Button keyHelpButton = new Button(this);
+        keyHelpButton.setText(R.string.button_open_realtime_doc);
+        keyHelpButton.setTextColor(Color.rgb(15, 139, 141));
+        keyHelpButton.setAllCaps(false);
+        keyHelpButton.setBackgroundColor(Color.TRANSPARENT);
+        keyHelpButton.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        keyHelpButton.setPadding(0, 0, 0, 0);
+        keyHelpButton.setOnClickListener(view -> openRealtimeDoc());
+        LinearLayout.LayoutParams helpButtonParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(42));
+        helpButtonParams.setMargins(0, dp(6), 0, dp(6));
+        form.addView(keyHelpButton, helpButtonParams);
+
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_settings)
             .setView(form)
@@ -554,6 +619,76 @@ public class MainActivity extends Activity {
             })
             .setNegativeButton(R.string.dialog_cancel, null)
             .show();
+    }
+
+    private void openRealtimeDoc() {
+        Uri docUri = Uri.parse("https://github.com/avatartulkun/voice-teleprompter-cn/blob/main/docs/%E5%AE%9E%E6%97%B6%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB%E5%BC%80%E9%80%9A%E8%AF%B4%E6%98%8E.md");
+        Intent intent = new Intent(Intent.ACTION_VIEW, docUri);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException error) {
+            statusView.setText(R.string.status_no_browser_app);
+        }
+    }
+
+
+    private void showAboutDialog(boolean requireAgreement) {
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.VERTICAL);
+        dialogLayout.setPadding(dp(18), dp(8), dp(18), dp(4));
+
+        TextView content = new TextView(this);
+        content.setText(R.string.about_content);
+        content.setTextSize(14);
+        content.setTextColor(Color.rgb(30, 45, 52));
+        content.setLineSpacing(dp(4), 1.0f);
+        content.setPadding(0, 0, 0, dp(12));
+        dialogLayout.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        CheckBox agreementCheck = new CheckBox(this);
+        agreementCheck.setText(R.string.about_agreement_check);
+        agreementCheck.setChecked(agreementAccepted);
+        agreementCheck.setTextSize(14);
+        agreementCheck.setTextColor(Color.rgb(30, 45, 52));
+        agreementCheck.setPadding(0, dp(4), 0, 0);
+        dialogLayout.addView(agreementCheck, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setTitle(R.string.dialog_about)
+            .setView(dialogLayout)
+            .setPositiveButton(requireAgreement ? R.string.dialog_agree_continue : R.string.dialog_close, null)
+            .create();
+        dialog.setOnShowListener(view -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setEnabled(!requireAgreement || agreementCheck.isChecked());
+            agreementCheck.setOnCheckedChangeListener((buttonView, isChecked) -> positiveButton.setEnabled(!requireAgreement || isChecked));
+            positiveButton.setOnClickListener(click -> {
+                if (agreementCheck.isChecked()) {
+                    agreementAccepted = true;
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                        .edit()
+                        .putBoolean(PREF_AGREEMENT_ACCEPTED, true)
+                        .apply();
+                }
+                dialog.dismiss();
+                if (requireAgreement && agreementAccepted) {
+                    enterPrompterMode();
+                }
+            });
+        });
+        dialog.show();
+    }
+
+    private void openEmailFeedback() {
+        String subject = Uri.encode(getString(R.string.feedback_email_subject));
+        String body = Uri.encode(getString(R.string.feedback_email_body));
+        Uri mailUri = Uri.parse("mailto:tulkun@foxmail.com?subject=" + subject + "&body=" + body);
+        Intent intent = new Intent(Intent.ACTION_SENDTO, mailUri);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException error) {
+            statusView.setText(R.string.status_no_email_app);
+        }
     }
 
     private void showScriptDialog() {
@@ -870,6 +1005,7 @@ public class MainActivity extends Activity {
             controlsPanel.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
             backHomeButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
             settingsFloatButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
+            mailFloatButton.setVisibility(View.GONE);
             promptView.setPadding(dp(40), dp(120), dp(42), dp(160));
             promptView.setTextSize(Math.max(34, promptView.getTextSize() / getResources().getDisplayMetrics().scaledDensity));
             return;
@@ -879,6 +1015,10 @@ public class MainActivity extends Activity {
         controlsPanel.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
         backHomeButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
         settingsFloatButton.setVisibility(prompterMode ? View.VISIBLE : View.GONE);
+        mailFloatButton.setVisibility(prompterMode ? View.GONE : View.VISIBLE);
+        FrameLayout.LayoutParams settingsParams = (FrameLayout.LayoutParams) settingsFloatButton.getLayoutParams();
+        settingsParams.setMargins(0, landscape ? dp(18) : dp(42), dp(12), 0);
+        settingsFloatButton.setLayoutParams(settingsParams);
         titleView.setVisibility(landscape ? View.GONE : View.VISIBLE);
         statusView.setMinHeight(landscape ? dp(28) : dp(42));
         promptView.setPadding(
@@ -1615,3 +1755,5 @@ public class MainActivity extends Activity {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }
+
+

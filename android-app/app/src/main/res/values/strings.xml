@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">语音跟读提词器</string>
-    <string name="title_main">语音跟读提词器</string>
+    <string name="title_main">语音跟读提词器 · AI跟读自动高亮</string>
     <string name="default_script">大家好，欢迎使用语音跟读提词器。点击开始后朗读这段稿件，程序会把识别到的文字标成彩色。</string>
     <string name="status_tap_mic">请先测试麦克风。</string>
     <string name="button_mic_test">麦克风</string>
@@ -29,6 +29,9 @@
     <string name="hint_baidu_api_key">语音识别 API Key</string>
     <string name="hint_baidu_app_id">语音识别 AppID</string>
     <string name="hint_baidu_secret_key">语音识别 Secret Key</string>
+    <string name="hint_realtime_key_help">如何获取密钥：可以去百度智能云、科大讯飞、腾讯云、阿里云、华为云、火山引擎等平台开通或购买语音识别服务。购买时请选择“实时语音识别”。这些平台通常都有免费额度可以用，对于轻中量用户完全满足日常需求。更详细步骤可参考下面链接（推荐谷歌浏览器打开）。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
+    <string name="button_open_realtime_doc">查看实时语音识别开通说明</string>
+    <string name="status_no_browser_app">未检测到可用浏览器，请复制开通说明链接后手动打开。</string>
     <string name="dialog_settings">设置</string>
     <string name="dialog_script">编辑稿件</string>
     <string name="dialog_follow_settings">跟读设置</string>
@@ -71,7 +74,7 @@
     <string name="speech_services_none">语音服务：未检测到。</string>
     <string name="speech_service_prefix">语音服务：</string>
     <string name="label_app_tag">AI 跟读 · 自动高亮</string>
-    <string name="subtitle_main">为演讲、录课和口播练习准备的移动提词器。</string>
+    <string name="subtitle_main">为演讲、录课和口播练习准备的移动提词器，仅需三步即可完成。</string>
     <string name="label_current_status">当前状态</string>
     <string name="label_prepare_section">开始前准备</string>
     <string name="hint_prepare_section">先放入稿件、设置识别密钥，再进入提词模式。</string>
@@ -81,5 +84,16 @@
     <string name="label_setup_section">第一步：设置识别密钥</string>
     <string name="status_mic_checking">点击下方按钮测试麦克风</string>
     
-    <string name="label_step3">第三步：导入与设置</string>
+    <string name="label_step3">第三步：导入与设置（也可进入提词后设置）</string>
+    <string name="button_about">关于与协议</string>
+    <string name="button_feedback_email">邮件反馈</string>
+    <string name="dialog_about">关于与协议</string>
+    <string name="dialog_close">关闭</string>
+    <string name="dialog_agree_continue">同意并进入</string>
+    <string name="status_no_email_app">未检测到可用的邮件应用，请手动发送邮件至 tulkun@foxmail.com。</string>
+    <string name="feedback_email_subject">语音跟读提词器反馈</string>
+    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.2.0\n</string>
+    <string name="about_agreement_check">已阅读并同意用户协议和隐私政策</string>
+    <string name="about_content">版本号：v1.2.0\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
 </resources>
+
