@@ -5,6 +5,9 @@ build/
 
 # Local Android Studio / machine settings
 local.properties
+**/keystore.properties
+*.keystore
+*.jks
 .idea/
 *.iml
 
