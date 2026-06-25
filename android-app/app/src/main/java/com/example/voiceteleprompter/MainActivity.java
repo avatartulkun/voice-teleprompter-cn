@@ -604,7 +604,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_settings)
-            .setView(form)
+            .setView(scrollableDialogView(form))
             .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
                 savedBaiduApiKey = apiKeyField.getText().toString().trim();
                 savedBaiduAppId = appIdField.getText().toString().trim();
@@ -655,7 +655,7 @@ public class MainActivity extends Activity {
 
         AlertDialog dialog = new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_about)
-            .setView(dialogLayout)
+            .setView(scrollableDialogView(dialogLayout))
             .setPositiveButton(requireAgreement ? R.string.dialog_agree_continue : R.string.dialog_close, null)
             .create();
         dialog.setOnShowListener(view -> {
@@ -745,7 +745,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_script)
-            .setView(dialogLayout)
+            .setView(scrollableDialogView(dialogLayout))
             .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
                 scriptText = scriptField.getText().toString();
                 readIndex = 0;
@@ -807,7 +807,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_follow_settings)
-            .setView(form)
+            .setView(scrollableDialogView(form))
             .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
                 colorStep = Math.max(1, colorSeek.getProgress());
                 autoAdvanceStep = Math.max(1, autoSeek.getProgress());
@@ -882,7 +882,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_display_settings)
-            .setView(form)
+            .setView(scrollableDialogView(form))
             .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
                 promptFontSize = Math.max(24, fontSeek.getProgress());
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -962,6 +962,23 @@ public class MainActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         };
+    }
+
+    private ScrollView scrollableDialogView(View content) {
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(false);
+        scrollView.setPadding(0, 0, 0, dp(4));
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int maxHeight = (int) (screenHeight * (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 0.58f : 0.68f));
+        scrollView.addView(content, new ScrollView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        scrollView.setLayoutParams(new ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            Math.max(dp(260), maxHeight)
+        ));
+        return scrollView;
     }
 
     private void applyDisplaySettings() {
