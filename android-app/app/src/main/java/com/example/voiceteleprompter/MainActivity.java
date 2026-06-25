@@ -198,7 +198,7 @@ public class MainActivity extends Activity {
 
         homePanel = new LinearLayout(this);
         homePanel.setOrientation(LinearLayout.VERTICAL);
-        homePanel.setPadding(dp(18), dp(22), dp(18), dp(22));
+        homePanel.setPadding(dp(18), dp(38), dp(18), dp(22));
         homeScroll.addView(homePanel, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         controlsPanel = new LinearLayout(this);

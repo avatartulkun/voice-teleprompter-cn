@@ -35,7 +35,7 @@
 最新测试版本：
 
 ```text
-v1.2.1
+v1.2.2
 ```
 
 本次更新在已有完整工程基础上，优化了 Android 端首页和提词模式界面，调整了设置、麦克风测试、稿件导入和进入提词的操作流程，并完善了实时语音识别配置说明。
@@ -68,7 +68,7 @@ android-app/
 Debug APK 常见输出位置：
 
 ```text
-android-app/app/build/outputs/apk/debug/voice-teleprompter-cn-android-v1.2.1.apk
+android-app/app/build/outputs/apk/release/voice-teleprompter-cn-android-v1.2.2-release.apk
 ```
 
 ## 注意事项
