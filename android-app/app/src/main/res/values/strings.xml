@@ -29,9 +29,11 @@
     <string name="hint_baidu_api_key">语音识别 API Key</string>
     <string name="hint_baidu_app_id">语音识别 AppID</string>
     <string name="hint_baidu_secret_key">语音识别 Secret Key</string>
-    <string name="hint_realtime_key_help">如何获取密钥：可以去百度智能云、科大讯飞、腾讯云、阿里云、华为云、火山引擎等平台开通或购买语音识别服务。购买时请选择“实时语音识别”。这些平台通常都有免费额度可以用，对于轻中量用户完全满足日常需求。更详细步骤可参考下面链接（推荐谷歌浏览器打开）。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
+    <string name="label_speech_provider">语音服务商</string>
+    <string name="hint_realtime_key_help">如何获取密钥：当前版本保留百度智能云、腾讯云和阿里云。请在对应平台开通或购买“实时语音识别”服务，再按字段提示填写密钥。平台通常都有免费额度可以用，对于轻中量用户基本满足日常需求。更详细步骤可参考下面链接（推荐谷歌浏览器打开）。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
     <string name="button_open_realtime_doc">查看实时语音识别开通说明</string>
     <string name="status_no_browser_app">未检测到可用浏览器，请复制开通说明链接后手动打开。</string>
+    <string name="status_provider_not_supported">当前版本支持百度智能云、腾讯云和阿里云。</string>
     <string name="dialog_settings">设置</string>
     <string name="dialog_script">编辑稿件</string>
     <string name="dialog_follow_settings">跟读设置</string>
@@ -82,7 +84,7 @@
 
     <string name="label_mic_test">第二步：测试麦克风</string>
     <string name="label_setup_section">第一步：设置识别密钥</string>
-    <string name="status_mic_checking">点击下方按钮测试麦克风</string>
+    <string name="status_mic_checking">点击下方按钮测试麦克风，应用会检测是否收到声音。</string>
     
     <string name="label_step3">第三步：导入与设置（也可进入提词后设置）</string>
     <string name="button_about">关于与协议</string>
@@ -92,8 +94,8 @@
     <string name="dialog_agree_continue">同意并进入</string>
     <string name="status_no_email_app">未检测到可用的邮件应用，请手动发送邮件至 tulkun@foxmail.com。</string>
     <string name="feedback_email_subject">语音跟读提词器反馈</string>
-    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.2.2\n</string>
+    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.3.0\n</string>
     <string name="about_agreement_check">已阅读并同意用户协议和隐私政策</string>
-    <string name="about_content">版本号：v1.2.2\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
+    <string name="about_content">版本号：v1.3.0\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
 </resources>
 
