@@ -745,24 +745,24 @@ public class MainActivity extends Activity {
         helpLayout.setPadding(dp(18), dp(8), dp(18), dp(8));
 
         TextView helpContent = new TextView(this);
-        helpContent.setText(R.string.realtime_open_help_content);
+        helpContent.setText(R.string.realtime_open_help_intro);
         helpContent.setTextSize(14);
         helpContent.setTextColor(Color.rgb(30, 45, 52));
         helpContent.setLineSpacing(dp(4), 1.0f);
         helpContent.setPadding(0, 0, 0, dp(10));
         helpLayout.addView(helpContent, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        TextView websiteTitle = new TextView(this);
-        websiteTitle.setText(R.string.realtime_open_help_websites_title);
-        websiteTitle.setTextSize(14);
-        websiteTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        websiteTitle.setTextColor(Color.rgb(30, 45, 52));
-        websiteTitle.setPadding(0, dp(4), 0, dp(6));
-        helpLayout.addView(websiteTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        addProviderHelpSection(helpLayout, "二、百度智能云", BAIDU_ASR_URL, getString(R.string.realtime_open_help_baidu));
+        addProviderHelpSection(helpLayout, "三、腾讯云", TENCENT_ASR_URL, getString(R.string.realtime_open_help_tencent));
+        addProviderHelpSection(helpLayout, "四、阿里云", ALIYUN_ASR_URL, getString(R.string.realtime_open_help_aliyun));
 
-        addWebsiteCopyButton(helpLayout, "百度智能云", BAIDU_ASR_URL);
-        addWebsiteCopyButton(helpLayout, "腾讯云", TENCENT_ASR_URL);
-        addWebsiteCopyButton(helpLayout, "阿里云", ALIYUN_ASR_URL);
+        TextView footer = new TextView(this);
+        footer.setText(R.string.realtime_open_help_footer);
+        footer.setTextSize(14);
+        footer.setTextColor(Color.rgb(30, 45, 52));
+        footer.setLineSpacing(dp(4), 1.0f);
+        footer.setPadding(0, dp(6), 0, 0);
+        helpLayout.addView(footer, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         new AlertDialog.Builder(this)
             .setTitle(R.string.button_open_realtime_doc)
@@ -771,24 +771,32 @@ public class MainActivity extends Activity {
             .show();
     }
 
-    private void addWebsiteCopyButton(LinearLayout parent, String providerName, String url) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.VERTICAL);
-        row.setPadding(0, dp(2), 0, dp(8));
+    private void addProviderHelpSection(LinearLayout parent, String title, String url, String body) {
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        titleRow.setPadding(0, dp(8), 0, dp(4));
 
-        TextView urlView = new TextView(this);
-        urlView.setText(providerName + "：" + url);
-        urlView.setTextSize(12);
-        urlView.setTextColor(Color.rgb(71, 85, 105));
-        urlView.setSingleLine(true);
-        urlView.setEllipsize(TextUtils.TruncateAt.END);
-        urlView.setPadding(0, 0, 0, dp(4));
-        row.addView(urlView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextSize(14);
+        titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleView.setTextColor(Color.rgb(30, 45, 52));
+        titleRow.addView(titleView, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        Button copyButton = compactDialogButton("复制" + providerName + "网站");
-        copyButton.setOnClickListener(view -> copyToClipboard(providerName + "网站", url));
-        row.addView(copyButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
-        parent.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        Button copyButton = compactDialogButton("复制网站");
+        copyButton.setTextSize(12);
+        copyButton.setOnClickListener(view -> copyToClipboard(title.replaceFirst("^[一二三四五六七八九十]+、", "") + "网站", url));
+        titleRow.addView(copyButton, new LinearLayout.LayoutParams(dp(96), dp(36)));
+        parent.addView(titleRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView bodyView = new TextView(this);
+        bodyView.setText(body);
+        bodyView.setTextSize(14);
+        bodyView.setTextColor(Color.rgb(30, 45, 52));
+        bodyView.setLineSpacing(dp(4), 1.0f);
+        bodyView.setPadding(0, 0, 0, dp(4));
+        parent.addView(bodyView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private int getProviderIndex(String provider) {
