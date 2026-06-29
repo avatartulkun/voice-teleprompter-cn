@@ -4,6 +4,8 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -22,6 +24,7 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.Base64;
@@ -38,6 +41,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 
@@ -96,6 +100,11 @@ public class MainActivity extends Activity {
     private static final String PROVIDER_BAIDU = "baidu";
     private static final String PROVIDER_TENCENT = "tencent";
     private static final String PROVIDER_ALIYUN = "aliyun";
+    private static final String OPEN_SOURCE_URL = "https://github.com/avatartulkun/voice-teleprompter-cn";
+    private static final String CONTACT_EMAIL = "tulkun@foxmail.com";
+    private static final String BAIDU_ASR_URL = "https://cloud.baidu.com/product/speech.html";
+    private static final String TENCENT_ASR_URL = "https://cloud.tencent.com/product/asr";
+    private static final String ALIYUN_ASR_URL = "https://ai.aliyun.com/nls/trans";
     private static final String[] PROVIDER_VALUES = {
         PROVIDER_BAIDU,
         PROVIDER_TENCENT,
@@ -656,7 +665,7 @@ public class MainActivity extends Activity {
         keyHelpButton.setBackgroundColor(Color.TRANSPARENT);
         keyHelpButton.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         keyHelpButton.setPadding(0, 0, 0, 0);
-        keyHelpButton.setOnClickListener(view -> openRealtimeDoc());
+        keyHelpButton.setOnClickListener(view -> showRealtimeHelpDialog());
         LinearLayout.LayoutParams helpButtonParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(42));
         helpButtonParams.setMargins(0, dp(6), 0, dp(6));
         form.addView(keyHelpButton, helpButtonParams);
@@ -730,14 +739,56 @@ public class MainActivity extends Activity {
         statusView.setText(getString(R.string.settings_saved) + " 当前服务商：" + PROVIDER_NAMES[providerIndex] + "\n" + getCredentialStatus());
     }
 
-    private void openRealtimeDoc() {
-        Uri docUri = Uri.parse("https://github.com/avatartulkun/voice-teleprompter-cn/blob/main/docs/%E5%AE%9E%E6%97%B6%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB%E5%BC%80%E9%80%9A%E8%AF%B4%E6%98%8E.md");
-        Intent intent = new Intent(Intent.ACTION_VIEW, docUri);
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException error) {
-            statusView.setText(R.string.status_no_browser_app);
-        }
+    private void showRealtimeHelpDialog() {
+        LinearLayout helpLayout = new LinearLayout(this);
+        helpLayout.setOrientation(LinearLayout.VERTICAL);
+        helpLayout.setPadding(dp(18), dp(8), dp(18), dp(8));
+
+        TextView helpContent = new TextView(this);
+        helpContent.setText(R.string.realtime_open_help_content);
+        helpContent.setTextSize(14);
+        helpContent.setTextColor(Color.rgb(30, 45, 52));
+        helpContent.setLineSpacing(dp(4), 1.0f);
+        helpContent.setPadding(0, 0, 0, dp(10));
+        helpLayout.addView(helpContent, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView websiteTitle = new TextView(this);
+        websiteTitle.setText(R.string.realtime_open_help_websites_title);
+        websiteTitle.setTextSize(14);
+        websiteTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        websiteTitle.setTextColor(Color.rgb(30, 45, 52));
+        websiteTitle.setPadding(0, dp(4), 0, dp(6));
+        helpLayout.addView(websiteTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        addWebsiteCopyButton(helpLayout, "百度智能云", BAIDU_ASR_URL);
+        addWebsiteCopyButton(helpLayout, "腾讯云", TENCENT_ASR_URL);
+        addWebsiteCopyButton(helpLayout, "阿里云", ALIYUN_ASR_URL);
+
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.button_open_realtime_doc)
+            .setView(scrollableDialogView(helpLayout))
+            .setPositiveButton(R.string.dialog_close, null)
+            .show();
+    }
+
+    private void addWebsiteCopyButton(LinearLayout parent, String providerName, String url) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setPadding(0, dp(2), 0, dp(8));
+
+        TextView urlView = new TextView(this);
+        urlView.setText(providerName + "：" + url);
+        urlView.setTextSize(12);
+        urlView.setTextColor(Color.rgb(71, 85, 105));
+        urlView.setSingleLine(true);
+        urlView.setEllipsize(TextUtils.TruncateAt.END);
+        urlView.setPadding(0, 0, 0, dp(4));
+        row.addView(urlView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Button copyButton = compactDialogButton("复制" + providerName + "网站");
+        copyButton.setOnClickListener(view -> copyToClipboard(providerName + "网站", url));
+        row.addView(copyButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(38)));
+        parent.addView(row, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private int getProviderIndex(String provider) {
@@ -862,6 +913,25 @@ public class MainActivity extends Activity {
         content.setPadding(0, 0, 0, dp(12));
         dialogLayout.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        LinearLayout copyRow = new LinearLayout(this);
+        copyRow.setOrientation(LinearLayout.HORIZONTAL);
+        copyRow.setPadding(0, 0, 0, dp(10));
+        Button copySourceButton = compactDialogButton(getString(R.string.button_copy_open_source));
+        Button copyEmailButton = compactDialogButton(getString(R.string.button_copy_contact));
+        copySourceButton.setOnClickListener(view -> copyToClipboard("开源地址", OPEN_SOURCE_URL));
+        copyEmailButton.setOnClickListener(view -> copyToClipboard("联系方式", CONTACT_EMAIL));
+        copyRow.addView(copySourceButton, new LinearLayout.LayoutParams(0, dp(38), 1));
+        LinearLayout.LayoutParams copyEmailParams = new LinearLayout.LayoutParams(0, dp(38), 1);
+        copyEmailParams.setMargins(dp(8), 0, 0, 0);
+        copyRow.addView(copyEmailButton, copyEmailParams);
+        dialogLayout.addView(copyRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Button shareButton = compactDialogButton(getString(R.string.button_share_app));
+        shareButton.setOnClickListener(view -> shareAppInfo());
+        LinearLayout.LayoutParams shareParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(38));
+        shareParams.setMargins(0, 0, 0, dp(10));
+        dialogLayout.addView(shareButton, shareParams);
+
         CheckBox agreementCheck = new CheckBox(this);
         agreementCheck.setText(R.string.about_agreement_check);
         agreementCheck.setChecked(agreementAccepted);
@@ -908,6 +978,40 @@ public class MainActivity extends Activity {
         }
     }
 
+    private Button compactDialogButton(String text) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setAllCaps(false);
+        button.setTextSize(13);
+        button.setTextColor(Color.WHITE);
+        button.setBackgroundResource(R.drawable.button_primary);
+        button.setPadding(dp(8), 0, dp(8), 0);
+        return button;
+    }
+
+    private void copyToClipboard(String label, String value) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText(label, value));
+            Toast.makeText(this, label + "已复制", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void shareAppInfo() {
+        String shareText = "语音跟读提词器\n"
+            + "开源地址：" + OPEN_SOURCE_URL + "\n"
+            + "联系方式：" + CONTACT_EMAIL;
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_SUBJECT, "语音跟读提词器");
+        intent.putExtra(Intent.EXTRA_TEXT, shareText);
+        try {
+            startActivity(Intent.createChooser(intent, getString(R.string.button_share_app)));
+        } catch (ActivityNotFoundException error) {
+            statusView.setText("未检测到可用的分享应用。");
+        }
+    }
+
     private void showScriptDialog() {
         LinearLayout dialogLayout = new LinearLayout(this);
         dialogLayout.setOrientation(LinearLayout.VERTICAL);
@@ -922,20 +1026,35 @@ public class MainActivity extends Activity {
         }
         
         TextView historyLabel = new TextView(this);
-        historyLabel.setText("历史稿件（点击加载）");
+        historyLabel.setText("历史稿件（点击序号加载，可删除）");
         historyLabel.setTextSize(14);
         historyLabel.setTextColor(Color.rgb(104, 119, 126));
         historyLabel.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         historyLabel.setPadding(dp(4), dp(4), dp(4), dp(6));
         dialogLayout.addView(historyLabel);
 
-        for (int i = 0; i < displayScripts.size() && i < 6; i++) {
-            String preview = displayScripts.get(i).length() > 28 ? displayScripts.get(i).substring(0, 28) + "..." : displayScripts.get(i);
+        TextView historyTip = new TextView(this);
+        historyTip.setText("最多保存 5 份稿件，新保存的稿件会排到第 1 位，并自动删除最旧的一份。");
+        historyTip.setTextSize(12);
+        historyTip.setTextColor(Color.rgb(104, 119, 126));
+        historyTip.setPadding(dp(4), 0, dp(4), dp(6));
+        dialogLayout.addView(historyTip);
+
+        for (int i = 0; i < displayScripts.size() && i < 5; i++) {
+            String scriptValue = displayScripts.get(i);
+            String preview = scriptValue.length() > 24 ? scriptValue.substring(0, 24) + "..." : scriptValue;
+            LinearLayout historyRow = new LinearLayout(this);
+            historyRow.setOrientation(LinearLayout.HORIZONTAL);
+            historyRow.setGravity(Gravity.CENTER_VERTICAL);
+            historyRow.setPadding(0, dp(2), 0, dp(2));
+
             TextView item = new TextView(this);
-            item.setText("· " + preview);
+            item.setText((i + 1) + ". " + preview);
             item.setTextSize(13);
             item.setTextColor(Color.rgb(15, 139, 141));
-            item.setPadding(dp(6), dp(5), dp(6), dp(5));
+            item.setPadding(dp(6), dp(6), dp(6), dp(6));
+            item.setSingleLine(true);
+            item.setEllipsize(TextUtils.TruncateAt.END);
             final int idx = i;
             item.setOnClickListener(v -> {
                 scriptText = displayScripts.get(idx);
@@ -943,7 +1062,23 @@ public class MainActivity extends Activity {
                 renderScript();
                 statusView.setText("已加载历史稿件");
             });
-            dialogLayout.addView(item);
+
+            Button deleteButton = new Button(this);
+            deleteButton.setText("删除");
+            deleteButton.setAllCaps(false);
+            deleteButton.setTextSize(12);
+            deleteButton.setTextColor(Color.rgb(185, 48, 48));
+            deleteButton.setPadding(dp(6), 0, dp(6), 0);
+            deleteButton.setOnClickListener(v -> {
+                savedScripts.remove(scriptValue);
+                persistSavedScripts();
+                dialogLayout.removeView(historyRow);
+                statusView.setText("已删除历史稿件");
+            });
+
+            historyRow.addView(item, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            historyRow.addView(deleteButton, new LinearLayout.LayoutParams(dp(74), dp(36)));
+            dialogLayout.addView(historyRow);
         }
 
         View divider = new View(this);
@@ -960,10 +1095,17 @@ public class MainActivity extends Activity {
         scriptField.setPadding(dp(18), dp(8), dp(18), dp(8));
         dialogLayout.addView(scriptField);
 
-        new AlertDialog.Builder(this)
+        AlertDialog scriptDialog = new AlertDialog.Builder(this)
             .setTitle(R.string.dialog_script)
             .setView(scrollableDialogView(dialogLayout))
-            .setPositiveButton(R.string.dialog_save, (dialog, which) -> {
+            .setPositiveButton(R.string.dialog_save, null)
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .setNeutralButton(R.string.dialog_close, null)
+            .create();
+        scriptDialog.setOnShowListener(view -> {
+            Button saveButton = scriptDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button closeButton = scriptDialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+            saveButton.setOnClickListener(click -> {
                 scriptText = scriptField.getText().toString();
                 readIndex = 0;
                 targetReadIndex = 0;
@@ -974,9 +1116,10 @@ public class MainActivity extends Activity {
                 saveScriptToHistory(scriptText);
                 statusView.setText(R.string.script_saved);
                 renderScript();
-            })
-            .setNegativeButton(R.string.dialog_cancel, null)
-            .show();
+            });
+            closeButton.setOnClickListener(click -> scriptDialog.dismiss());
+        });
+        scriptDialog.show();
     }
 
     private void loadSavedScripts() {
@@ -991,9 +1134,16 @@ public class MainActivity extends Activity {
     }
 
     private void saveScriptToHistory(String script) {
+        if (script == null || script.trim().isEmpty()) {
+            return;
+        }
         savedScripts.remove(script);
         savedScripts.add(0, script);
-        if (savedScripts.size() > 10) savedScripts = new ArrayList<>(savedScripts.subList(0, 10));
+        if (savedScripts.size() > 5) savedScripts = new ArrayList<>(savedScripts.subList(0, 5));
+        persistSavedScripts();
+    }
+
+    private void persistSavedScripts() {
         org.json.JSONArray arr = new org.json.JSONArray();
         for (String s : savedScripts) arr.put(s);
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putString(PREF_SAVED_SCRIPTS, arr.toString()).apply();

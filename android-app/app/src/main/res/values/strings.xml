@@ -30,9 +30,10 @@
     <string name="hint_baidu_app_id">语音识别 AppID</string>
     <string name="hint_baidu_secret_key">语音识别 Secret Key</string>
     <string name="label_speech_provider">语音服务商</string>
-    <string name="hint_realtime_key_help">如何获取密钥：当前版本保留百度智能云、腾讯云和阿里云。请在对应平台开通或购买“实时语音识别”服务，再按字段提示填写密钥。平台通常都有免费额度可以用，对于轻中量用户基本满足日常需求。更详细步骤可参考下面链接（推荐谷歌浏览器打开）。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
-    <string name="button_open_realtime_doc">查看实时语音识别开通说明</string>
-    <string name="status_no_browser_app">未检测到可用浏览器，请复制开通说明链接后手动打开。</string>
+    <string name="hint_realtime_key_help">如何获取密钥：当前版本保留百度智能云、腾讯云和阿里云。请在对应平台开通或购买“实时语音识别”服务，再按字段提示填写密钥。平台通常都有免费额度可以用，对于轻中量用户基本满足日常需求。更详细步骤可点击下方“帮助/开通说明”。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
+    <string name="button_open_realtime_doc">帮助/开通说明</string>
+    <string name="realtime_open_help_content">实时语音识别开通说明\n\n一、为什么要开通实时语音识别\n本软件需要边朗读边识别，才能根据识别结果自动高亮当前朗读位置。因此开通或购买时请选择“实时语音识别”，不要误选“实时语音转写”等不对应的服务。\n\n二、百度智能云\n1. 打开百度智能云语音识别网站或控制台。\n2. 进入语音技术或语音识别相关产品。\n3. 创建应用并开通实时语音识别。\n4. 回到应用设置页，选择百度智能云，填写 AppID 和 API Key。\n5. Secret Key 当前可以不填写。\n\n三、腾讯云\n1. 打开腾讯云语音识别 ASR 网站或控制台。\n2. 进入语音识别相关产品。\n3. 开通实时语音识别服务。\n4. 在访问管理或密钥管理中创建并保存密钥。\n5. 回到应用设置页，选择腾讯云，填写 AppID、SecretId 和 SecretKey。\n6. SecretKey 通常只在创建时完整显示一次，请及时保存。\n\n四、阿里云\n1. 打开阿里云实时语音识别网站或控制台。\n2. 进入智能语音交互或语音识别相关产品。\n3. 创建项目或应用并开通实时语音识别。\n4. 获取 AppKey 和 Token。\n5. 回到应用设置页，选择阿里云，填写 AppKey 和 Token。\n6. Endpoint 可不填写，应用会使用默认地址。\n\n五、使用提醒\n各平台通常会提供一定免费额度，轻中量用户一般可以满足日常测试和练习。实际价格、额度和开通入口可能调整，请以各平台控制台显示为准。\n\n六、问题排查\n如果识别没有反应，请检查：麦克风权限、网络连接、服务商选择、密钥字段、实时语音识别开通状态、免费额度和账户余额。仍有问题时，可在关于与协议中复制联系方式，或点击首页右下角邮箱图标反馈。</string>
+    <string name="realtime_open_help_websites_title">服务商网站（一键复制）</string>
     <string name="status_provider_not_supported">当前版本支持百度智能云、腾讯云和阿里云。</string>
     <string name="dialog_settings">设置</string>
     <string name="dialog_script">编辑稿件</string>
@@ -92,10 +93,13 @@
     <string name="dialog_about">关于与协议</string>
     <string name="dialog_close">关闭</string>
     <string name="dialog_agree_continue">同意并进入</string>
+    <string name="button_copy_open_source">复制开源地址</string>
+    <string name="button_copy_contact">复制联系方式</string>
+    <string name="button_share_app">一键分享</string>
     <string name="status_no_email_app">未检测到可用的邮件应用，请手动发送邮件至 tulkun@foxmail.com。</string>
     <string name="feedback_email_subject">语音跟读提词器反馈</string>
-    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.3.0\n</string>
+    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.4.0\n</string>
     <string name="about_agreement_check">已阅读并同意用户协议和隐私政策</string>
-    <string name="about_content">版本号：v1.3.0\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
+    <string name="about_content">版本号：v1.4.0\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
 </resources>
 
