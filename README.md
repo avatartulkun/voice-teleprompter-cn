@@ -35,7 +35,7 @@
 最新测试版本：
 
 ```text
-v1.4.0
+v1.4.1
 ```
 
 本次更新基于 v1.3.0 继续完善 Android 端体验、稿件管理和实时识别配置流程，主要包括：
@@ -82,7 +82,7 @@ android-app/
 Debug APK 常见输出位置：
 
 ```text
-android-app/app/build/outputs/apk/release/voice-teleprompter-cn-android-v1.4.0-release.apk
+android-app/app/build/outputs/apk/release/voice-teleprompter-cn-android-v1.4.1-release.apk
 ```
 
 ## 注意事项
