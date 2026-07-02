@@ -18,6 +18,7 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.content.res.Configuration;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -28,6 +29,7 @@ import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +45,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -54,10 +57,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.SimpleTimeZone;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -71,6 +77,7 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "VoiceTeleprompter";
     private static final int AUDIO_PERMISSION_REQUEST = 1001;
     private static final int PANEL_REQUEST = 2002;
     private static final String PREFS_NAME = "voice_teleprompter_settings";
@@ -80,9 +87,9 @@ public class MainActivity extends Activity {
     private static final String PREF_TENCENT_APP_ID = "tencent_app_id";
     private static final String PREF_TENCENT_SECRET_ID = "tencent_secret_id";
     private static final String PREF_TENCENT_SECRET_KEY = "tencent_secret_key";
-    private static final String PREF_ALIYUN_TOKEN = "aliyun_token";
     private static final String PREF_ALIYUN_APP_KEY = "aliyun_app_key";
-    private static final String PREF_ALIYUN_ENDPOINT = "aliyun_endpoint";
+    private static final String PREF_ALIYUN_ACCESS_KEY_ID = "aliyun_access_key_id";
+    private static final String PREF_ALIYUN_ACCESS_KEY_SECRET = "aliyun_access_key_secret";
     private static final String PREF_SPEECH_PROVIDER = "speech_provider";
     private static final String PREF_SCRIPT = "script";
     private static final String PREF_SAVED_SCRIPTS = "saved_scripts";
@@ -105,15 +112,18 @@ public class MainActivity extends Activity {
     private static final String BAIDU_ASR_URL = "https://cloud.baidu.com/product/speech.html";
     private static final String TENCENT_ASR_URL = "https://cloud.tencent.com/product/asr";
     private static final String ALIYUN_ASR_URL = "https://ai.aliyun.com/nls/trans";
+    private static final int BAIDU_REALTIME_DEV_PID = 1537;
+    private static final String ALIYUN_NLS_ENDPOINT = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1";
+    private static final String ALIYUN_TOKEN_ENDPOINT = "https://nls-meta.cn-shanghai.aliyuncs.com/";
     private static final String[] PROVIDER_VALUES = {
         PROVIDER_BAIDU,
         PROVIDER_TENCENT,
         PROVIDER_ALIYUN
     };
     private static final String[] PROVIDER_NAMES = {
-        "百度智能云（当前可用）",
-        "腾讯云（当前可用）",
-        "阿里云（当前可用）"
+        "百度智能云",
+        "腾讯云",
+        "阿里云"
     };
 
     private TextView statusView;
@@ -161,13 +171,16 @@ public class MainActivity extends Activity {
     private String savedTencentAppId = "";
     private String savedTencentSecretId = "";
     private String savedTencentSecretKey = "";
-    private String savedAliyunToken = "";
     private String savedAliyunAppKey = "";
-    private String savedAliyunEndpoint = "";
+    private String savedAliyunAccessKeyId = "";
+    private String savedAliyunAccessKeySecret = "";
+    private String cachedAliyunToken = "";
+    private long cachedAliyunTokenExpireTime;
     private String savedSpeechProvider = PROVIDER_BAIDU;
     private String activeRealtimeProvider = PROVIDER_BAIDU;
     private String activeAliyunTaskId = "";
     private String realtimeFinalText = "";
+    private String lastRealtimeErrorMessage = "";
     private ArrayList<String> savedScripts = new ArrayList<String>();
     private String normalizedScript = "";
     private int colorStep = 1;
@@ -583,9 +596,9 @@ public class MainActivity extends Activity {
         savedTencentAppId = prefs.getString(PREF_TENCENT_APP_ID, "");
         savedTencentSecretId = prefs.getString(PREF_TENCENT_SECRET_ID, "");
         savedTencentSecretKey = prefs.getString(PREF_TENCENT_SECRET_KEY, "");
-        savedAliyunToken = prefs.getString(PREF_ALIYUN_TOKEN, "");
         savedAliyunAppKey = prefs.getString(PREF_ALIYUN_APP_KEY, "");
-        savedAliyunEndpoint = prefs.getString(PREF_ALIYUN_ENDPOINT, "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1");
+        savedAliyunAccessKeyId = prefs.getString(PREF_ALIYUN_ACCESS_KEY_ID, "");
+        savedAliyunAccessKeySecret = prefs.getString(PREF_ALIYUN_ACCESS_KEY_SECRET, "");
         savedSpeechProvider = prefs.getString(PREF_SPEECH_PROVIDER, PROVIDER_BAIDU);
         scriptText = prefs.getString(PREF_SCRIPT, getString(R.string.default_script));
         loadSavedScripts();
@@ -717,15 +730,14 @@ public class MainActivity extends Activity {
                 .putString(PREF_TENCENT_SECRET_KEY, savedTencentSecretKey);
         } else if (PROVIDER_ALIYUN.equals(savedSpeechProvider)) {
             savedAliyunAppKey = apiKeyField.getText().toString().trim();
-            savedAliyunToken = appIdField.getText().toString().trim();
-            savedAliyunEndpoint = secretKeyField.getText().toString().trim();
-            if (savedAliyunEndpoint.isEmpty()) {
-                savedAliyunEndpoint = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1";
-            }
+            savedAliyunAccessKeyId = appIdField.getText().toString().trim();
+            savedAliyunAccessKeySecret = secretKeyField.getText().toString().trim();
+            cachedAliyunToken = "";
+            cachedAliyunTokenExpireTime = 0L;
             editor
-                .putString(PREF_ALIYUN_TOKEN, savedAliyunToken)
                 .putString(PREF_ALIYUN_APP_KEY, savedAliyunAppKey)
-                .putString(PREF_ALIYUN_ENDPOINT, savedAliyunEndpoint);
+                .putString(PREF_ALIYUN_ACCESS_KEY_ID, savedAliyunAccessKeyId)
+                .putString(PREF_ALIYUN_ACCESS_KEY_SECRET, savedAliyunAccessKeySecret);
         } else {
             savedBaiduAppId = apiKeyField.getText().toString().trim();
             savedBaiduApiKey = appIdField.getText().toString().trim();
@@ -833,12 +845,12 @@ public class MainActivity extends Activity {
             firstLabel.setText("阿里云 AppKey");
             firstField.setHint("阿里云 AppKey");
             firstField.setText(savedAliyunAppKey);
-            appIdLabel.setText("阿里云 Token");
-            appIdField.setHint("阿里云 Token");
-            appIdField.setText(savedAliyunToken);
-            secretLabel.setText("阿里云 Endpoint");
-            secretField.setHint("阿里云 Endpoint，可不填");
-            secretField.setText(savedAliyunEndpoint);
+            appIdLabel.setText("阿里云 AccessKey ID");
+            appIdField.setHint("阿里云 AccessKey ID");
+            appIdField.setText(savedAliyunAccessKeyId);
+            secretLabel.setText("阿里云 AccessKey Secret");
+            secretField.setHint("阿里云 AccessKey Secret");
+            secretField.setText(savedAliyunAccessKeySecret);
             return;
         }
         firstLabel.setText("百度智能云 AppID");
@@ -847,8 +859,8 @@ public class MainActivity extends Activity {
         appIdLabel.setText("百度智能云 API Key");
         appIdField.setHint(R.string.hint_baidu_api_key);
         appIdField.setText(savedBaiduApiKey);
-        secretLabel.setText("百度智能云 Secret Key");
-        secretField.setHint(R.string.hint_baidu_secret_key);
+        secretLabel.setText("百度智能云 Secret Key（可选填）");
+        secretField.setHint("语音识别 Secret Key（可选填）");
         secretField.setText(savedBaiduSecretKey);
     }
 
@@ -874,7 +886,8 @@ public class MainActivity extends Activity {
             addIfEmpty(missing, savedTencentSecretKey, "SecretKey");
         } else if (isAliyunProvider()) {
             addIfEmpty(missing, savedAliyunAppKey, "AppKey");
-            addIfEmpty(missing, savedAliyunToken, "Token");
+            addIfEmpty(missing, savedAliyunAccessKeyId, "AccessKey ID");
+            addIfEmpty(missing, savedAliyunAccessKeySecret, "AccessKey Secret");
         } else {
             addIfEmpty(missing, getBaiduAppId(), "AppID");
             addIfEmpty(missing, getBaiduApiKey(), "API Key");
@@ -1630,14 +1643,18 @@ public class MainActivity extends Activity {
             startAliyunRealtimeRecognition();
             return;
         }
+        if (isBaiduProvider()) {
+            startCloudRecording();
+            return;
+        }
         if (!isBaiduProvider()) {
-            statusView.setText(R.string.status_provider_not_supported);
+            showRealtimeNotice(getString(R.string.status_provider_not_supported));
             return;
         }
         String apiKey = getBaiduApiKey();
         String appId = getBaiduAppId();
         if (apiKey.isEmpty() || appId.isEmpty()) {
-            statusView.setText(R.string.status_enter_realtime_keys);
+            showRealtimeNotice(getString(R.string.status_enter_realtime_keys));
             return;
         }
 
@@ -1645,11 +1662,12 @@ public class MainActivity extends Activity {
         try {
             appIdNumber = Integer.parseInt(appId);
         } catch (NumberFormatException error) {
-            statusView.setText(getString(R.string.status_realtime_failed) + "AppID must be numeric.");
+            showRealtimeNotice(getString(R.string.status_realtime_failed) + "AppID must be numeric.");
             return;
         }
 
         realtimeFinalText = "";
+        lastRealtimeErrorMessage = "";
         targetReadIndex = readIndex;
         lastProgressAt = System.currentTimeMillis();
         activeRealtimeProvider = PROVIDER_BAIDU;
@@ -1670,7 +1688,7 @@ public class MainActivity extends Activity {
                     JSONObject data = new JSONObject();
                     data.put("appid", appIdNumber);
                     data.put("appkey", apiKey);
-                    data.put("dev_pid", 15372);
+                    data.put("dev_pid", BAIDU_REALTIME_DEV_PID);
                     data.put("cuid", "voice-teleprompter-android");
                     data.put("format", "pcm");
                     data.put("sample", 16000);
@@ -1692,27 +1710,19 @@ public class MainActivity extends Activity {
 
             @Override
             public void onFailure(WebSocket webSocket, Throwable throwable, Response response) {
-                runOnUiThread(() -> {
-                    statusView.setText(buildRealtimeDisconnectMessage(throwable.getMessage()));
-                    startButton.setEnabled(true);
-                    pauseButton.setEnabled(false);
-                });
+                handleRealtimeFailure(throwable, response);
                 cleanupRealtime();
             }
 
             @Override
             public void onClosing(WebSocket webSocket, int code, String reason) {
                 cleanupRealtime();
-                webSocket.close(code, reason);
+                closeWebSocketSafely(webSocket, code, reason);
             }
 
             @Override
             public void onClosed(WebSocket webSocket, int code, String reason) {
-                runOnUiThread(() -> {
-                    statusView.setText(realtimeStopRequested ? getString(R.string.status_realtime_stopped) : buildRealtimeClosedMessage(code, reason));
-                    startButton.setEnabled(true);
-                    pauseButton.setEnabled(false);
-                });
+                handleRealtimeClosed(code, reason);
                 cleanupRealtime();
             }
         });
@@ -1720,11 +1730,12 @@ public class MainActivity extends Activity {
 
     private void startTencentRealtimeRecognition() {
         if (savedTencentAppId.isEmpty() || savedTencentSecretId.isEmpty() || savedTencentSecretKey.isEmpty()) {
-            statusView.setText("请先在设置中填写腾讯云 AppID、SecretId 和 SecretKey。");
+            showRealtimeNotice("请先在设置中填写腾讯云 AppID、SecretId 和 SecretKey。");
             return;
         }
 
         realtimeFinalText = "";
+        lastRealtimeErrorMessage = "";
         targetReadIndex = readIndex;
         lastProgressAt = System.currentTimeMillis();
         activeRealtimeProvider = PROVIDER_TENCENT;
@@ -1753,27 +1764,19 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onFailure(WebSocket webSocket, Throwable throwable, Response response) {
-                    runOnUiThread(() -> {
-                        statusView.setText(buildRealtimeDisconnectMessage(throwable.getMessage()));
-                        startButton.setEnabled(true);
-                        pauseButton.setEnabled(false);
-                    });
+                    handleRealtimeFailure(throwable, response);
                     cleanupRealtime();
                 }
 
                 @Override
                 public void onClosing(WebSocket webSocket, int code, String reason) {
                     cleanupRealtime();
-                    webSocket.close(code, reason);
+                    closeWebSocketSafely(webSocket, code, reason);
                 }
 
                 @Override
                 public void onClosed(WebSocket webSocket, int code, String reason) {
-                    runOnUiThread(() -> {
-                        statusView.setText(realtimeStopRequested ? getString(R.string.status_realtime_stopped) : buildRealtimeClosedMessage(code, reason));
-                        startButton.setEnabled(true);
-                        pauseButton.setEnabled(false);
-                    });
+                    handleRealtimeClosed(code, reason);
                     cleanupRealtime();
                 }
             });
@@ -1785,27 +1788,48 @@ public class MainActivity extends Activity {
     }
 
     private void startAliyunRealtimeRecognition() {
-        if (savedAliyunToken.isEmpty() || savedAliyunAppKey.isEmpty()) {
-            statusView.setText("请先在设置中填写阿里云 AppKey 和 Token。");
+        savedAliyunAppKey = savedAliyunAppKey.trim();
+        savedAliyunAccessKeyId = savedAliyunAccessKeyId.trim();
+        savedAliyunAccessKeySecret = savedAliyunAccessKeySecret.trim();
+        if (savedAliyunAppKey.isEmpty() || savedAliyunAccessKeyId.isEmpty() || savedAliyunAccessKeySecret.isEmpty()) {
+            showRealtimeNotice("请先在设置中填写阿里云 AppKey、AccessKey ID 和 AccessKey Secret。");
             return;
         }
 
         realtimeFinalText = "";
+        lastRealtimeErrorMessage = "";
         targetReadIndex = readIndex;
         lastProgressAt = System.currentTimeMillis();
         activeRealtimeProvider = PROVIDER_ALIYUN;
         activeAliyunTaskId = uuid32();
         realtimeStopRequested = false;
         realtimeClient = new OkHttpClient();
+        statusView.setText("正在获取阿里云 Token。");
+        startButton.setEnabled(false);
+        pauseButton.setEnabled(true);
 
+        new Thread(() -> {
+            try {
+                String token = getValidAliyunToken();
+                runOnUiThread(() -> openAliyunRealtimeWebSocket(token));
+            } catch (Exception error) {
+                String message = getString(R.string.status_realtime_failed) + "获取阿里云 Token 失败：" + error.getMessage();
+                runOnUiThread(() -> {
+                    showRealtimeNotice(message);
+                    startButton.setEnabled(true);
+                    pauseButton.setEnabled(false);
+                });
+                cleanupRealtime();
+            }
+        }).start();
+    }
+
+    private void openAliyunRealtimeWebSocket(String token) {
         try {
             Request request = new Request.Builder()
-                .url(buildAliyunRealtimeUrl())
+                .url(buildAliyunRealtimeUrl(token))
                 .build();
             statusView.setText(R.string.status_realtime_starting);
-            startButton.setEnabled(false);
-            pauseButton.setEnabled(true);
-
             realtimeWebSocket = realtimeClient.newWebSocket(request, new WebSocketListener() {
                 @Override
                 public void onOpen(WebSocket webSocket, Response response) {
@@ -1819,32 +1843,24 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void onFailure(WebSocket webSocket, Throwable throwable, Response response) {
-                    runOnUiThread(() -> {
-                        statusView.setText(buildRealtimeDisconnectMessage(throwable.getMessage()));
-                        startButton.setEnabled(true);
-                        pauseButton.setEnabled(false);
-                    });
+                    handleRealtimeFailure(throwable, response);
                     cleanupRealtime();
                 }
 
                 @Override
                 public void onClosing(WebSocket webSocket, int code, String reason) {
                     cleanupRealtime();
-                    webSocket.close(code, reason);
+                    closeWebSocketSafely(webSocket, code, reason);
                 }
 
                 @Override
                 public void onClosed(WebSocket webSocket, int code, String reason) {
-                    runOnUiThread(() -> {
-                        statusView.setText(realtimeStopRequested ? getString(R.string.status_realtime_stopped) : buildRealtimeClosedMessage(code, reason));
-                        startButton.setEnabled(true);
-                        pauseButton.setEnabled(false);
-                    });
+                    handleRealtimeClosed(code, reason);
                     cleanupRealtime();
                 }
             });
         } catch (Exception error) {
-            statusView.setText(getString(R.string.status_realtime_failed) + error.getMessage());
+            showRealtimeNotice(getString(R.string.status_realtime_failed) + error.getMessage());
             startButton.setEnabled(true);
             pauseButton.setEnabled(false);
         }
@@ -1870,13 +1886,76 @@ public class MainActivity extends Activity {
         return "wss://" + hostAndPath + "?" + query + "&signature=" + URLEncoder.encode(signature, "UTF-8");
     }
 
-    private String buildAliyunRealtimeUrl() throws Exception {
-        String endpoint = savedAliyunEndpoint;
-        if (endpoint == null || endpoint.trim().isEmpty()) {
-            endpoint = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1";
+    private String buildAliyunRealtimeUrl(String token) throws Exception {
+        return ALIYUN_NLS_ENDPOINT + "?token=" + URLEncoder.encode(token, "UTF-8");
+    }
+
+    private String getValidAliyunToken() throws Exception {
+        long nowSeconds = System.currentTimeMillis() / 1000L;
+        if (!cachedAliyunToken.isEmpty() && cachedAliyunTokenExpireTime - nowSeconds > 3600L) {
+            return cachedAliyunToken;
         }
-        String separator = endpoint.contains("?") ? "&" : "?";
-        return endpoint + separator + "token=" + URLEncoder.encode(savedAliyunToken, "UTF-8");
+        JSONObject tokenObject = fetchAliyunToken();
+        cachedAliyunToken = tokenObject.getString("Id");
+        cachedAliyunTokenExpireTime = tokenObject.optLong("ExpireTime", 0L);
+        if (cachedAliyunToken.isEmpty() || cachedAliyunTokenExpireTime <= nowSeconds) {
+            throw new Exception("Token 返回为空或已过期。");
+        }
+        return cachedAliyunToken;
+    }
+
+    private JSONObject fetchAliyunToken() throws Exception {
+        TreeMap<String, String> params = new TreeMap<String, String>();
+        params.put("AccessKeyId", savedAliyunAccessKeyId);
+        params.put("Action", "CreateToken");
+        params.put("Format", "JSON");
+        params.put("RegionId", "cn-shanghai");
+        params.put("SignatureMethod", "HMAC-SHA1");
+        params.put("SignatureNonce", UUID.randomUUID().toString());
+        params.put("SignatureVersion", "1.0");
+        params.put("Timestamp", aliyunTimestamp());
+        params.put("Version", "2019-02-28");
+
+        String canonicalizedQuery = buildAliyunCanonicalizedQuery(params);
+        String stringToSign = "GET&" + aliyunPercentEncode("/") + "&" + aliyunPercentEncode(canonicalizedQuery);
+        String signature = hmacSha1Base64(stringToSign, savedAliyunAccessKeySecret + "&");
+        String url = ALIYUN_TOKEN_ENDPOINT + "?Signature=" + aliyunPercentEncode(signature) + "&" + canonicalizedQuery;
+        String response = getText(url);
+        JSONObject json = new JSONObject(response);
+        JSONObject token = json.optJSONObject("Token");
+        if (token == null) {
+            String code = json.optString("Code");
+            String message = json.optString("Message", json.optString("ErrMsg", response));
+            throw new Exception((code.isEmpty() ? "" : code + "：") + message);
+        }
+        return token;
+    }
+
+    private String aliyunTimestamp() {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        format.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        return format.format(new Date());
+    }
+
+    private String buildAliyunCanonicalizedQuery(TreeMap<String, String> params) throws Exception {
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (builder.length() > 0) {
+                builder.append("&");
+            }
+            builder
+                .append(aliyunPercentEncode(entry.getKey()))
+                .append("=")
+                .append(aliyunPercentEncode(entry.getValue()));
+        }
+        return builder.toString();
+    }
+
+    private String aliyunPercentEncode(String value) throws Exception {
+        return URLEncoder.encode(value, "UTF-8")
+            .replace("+", "%20")
+            .replace("*", "%2A")
+            .replace("%7E", "~");
     }
 
     private String buildAliyunCommand(String name, boolean withPayload) {
@@ -1896,6 +1975,7 @@ public class MainActivity extends Activity {
                 payload.put("enable_intermediate_result", true);
                 payload.put("enable_punctuation_prediction", true);
                 payload.put("enable_inverse_text_normalization", true);
+                payload.put("enable_ignore_sentence_timeout", true);
                 command.put("payload", payload);
             }
         } catch (Exception ignored) {
@@ -1937,18 +2017,94 @@ public class MainActivity extends Activity {
         return "实时识别连接已断开（" + provider + "）。\n" + detail + "\n请检查密钥、服务开通状态和网络后再点击开始。";
     }
 
+    private void handleRealtimeFailure(Throwable throwable, Response response) {
+        String detail = buildWebSocketFailureDetail(throwable, response);
+        lastRealtimeErrorMessage = buildRealtimeDisconnectMessage(detail);
+        Log.e(TAG, "Realtime failure: " + detail, throwable);
+        runOnUiThread(() -> {
+            showRealtimeNotice(lastRealtimeErrorMessage);
+            startButton.setEnabled(true);
+            pauseButton.setEnabled(false);
+        });
+    }
+
+    private void handleRealtimeClosed(int code, String reason) {
+        runOnUiThread(() -> {
+            if (realtimeStopRequested) {
+                statusView.setText(R.string.status_realtime_stopped);
+            } else if (lastRealtimeErrorMessage != null && !lastRealtimeErrorMessage.isEmpty()) {
+                showRealtimeNotice(lastRealtimeErrorMessage);
+            } else {
+                String message = buildRealtimeClosedMessage(code, reason);
+                Log.w(TAG, "Realtime closed: code=" + code + ", reason=" + reason);
+                showRealtimeNotice(message);
+            }
+            startButton.setEnabled(true);
+            pauseButton.setEnabled(false);
+        });
+    }
+
+    private void closeWebSocketSafely(WebSocket webSocket, int code, String reason) {
+        int safeCode = isReservedWebSocketCloseCode(code) ? 1000 : code;
+        try {
+            webSocket.close(safeCode, reason);
+        } catch (IllegalArgumentException error) {
+            Log.w(TAG, "Fallback close for invalid websocket code=" + code + ", reason=" + reason, error);
+            webSocket.close(1000, null);
+        }
+    }
+
+    private boolean isReservedWebSocketCloseCode(int code) {
+        return code == 1005 || code == 1006 || code == 1015;
+    }
+
+    private String buildWebSocketFailureDetail(Throwable throwable, Response response) {
+        StringBuilder detail = new StringBuilder();
+        if (response != null) {
+            detail.append("HTTP ").append(response.code());
+            if (response.message() != null && !response.message().trim().isEmpty()) {
+                detail.append(" ").append(response.message());
+            }
+        }
+        if (throwable != null) {
+            if (detail.length() > 0) {
+                detail.append("；");
+            }
+            detail.append(throwable.getClass().getSimpleName());
+            if (throwable.getMessage() != null && !throwable.getMessage().trim().isEmpty()) {
+                detail.append("：").append(throwable.getMessage());
+            }
+        }
+        return detail.length() == 0 ? "连接被中断" : detail.toString();
+    }
+
     private void showRealtimeServiceError(String detail) {
         realtimeStreaming = false;
+        lastRealtimeErrorMessage = buildRealtimeDisconnectMessage(detail);
+        Log.w(TAG, "Realtime service error: " + detail);
         runOnUiThread(() -> {
-            statusView.setText(buildRealtimeDisconnectMessage(detail));
+            showRealtimeNotice(lastRealtimeErrorMessage);
             startButton.setEnabled(true);
             pauseButton.setEnabled(false);
         });
         cleanupRealtime();
     }
 
+    private void showRealtimeNotice(String message) {
+        statusView.setText(message);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        if (!isFinishing()) {
+            new AlertDialog.Builder(this)
+                .setTitle("实时识别诊断")
+                .setMessage(message)
+                .setPositiveButton(R.string.dialog_close, null)
+                .show();
+        }
+    }
+
     private void startRealtimeAudioLoop(WebSocket webSocket) {
         int sampleRate = 16000;
+        int bytesPerSample = 2;
         int minBuffer = AudioRecord.getMinBufferSize(
             sampleRate,
             AudioFormat.CHANNEL_IN_MONO,
@@ -1969,13 +2125,20 @@ public class MainActivity extends Activity {
 
         audioThread = new Thread(() -> {
             byte[] buffer = new byte[5120];
+            long nextSendAt = SystemClock.elapsedRealtime();
             while (realtimeStreaming && audioRecord != null) {
                 int read = audioRecord.read(buffer, 0, buffer.length);
                 if (read > 0) {
+                    long now = SystemClock.elapsedRealtime();
+                    if (nextSendAt > now) {
+                        SystemClock.sleep(nextSendAt - now);
+                    }
                     boolean accepted = webSocket.send(okio.ByteString.of(buffer, 0, read));
                     if (!accepted) {
                         realtimeStreaming = false;
                     }
+                    long frameDurationMs = Math.max(20, read * 1000L / (sampleRate * bytesPerSample));
+                    nextSendAt = Math.max(SystemClock.elapsedRealtime(), nextSendAt) + frameDurationMs;
                 }
             }
         });
@@ -1983,6 +2146,7 @@ public class MainActivity extends Activity {
     }
 
     private void handleRealtimeMessage(String text) {
+        Log.d(TAG, "Baidu realtime message: " + compact(text));
         try {
             JSONObject json = new JSONObject(text);
             int errNo = json.optInt("err_no", 0);
@@ -1992,7 +2156,7 @@ public class MainActivity extends Activity {
             }
 
             String type = json.optString("type");
-            String result = json.optString("result");
+            String result = extractRealtimeResult(json);
             if (result.isEmpty()) {
                 return;
             }
@@ -2008,7 +2172,29 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String extractRealtimeResult(JSONObject json) {
+        Object resultValue = json.opt("result");
+        if (resultValue instanceof JSONArray) {
+            JSONArray resultArray = (JSONArray) resultValue;
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < resultArray.length(); i++) {
+                builder.append(resultArray.optString(i));
+            }
+            return builder.toString();
+        }
+        if (resultValue instanceof JSONObject) {
+            JSONObject resultObject = (JSONObject) resultValue;
+            String value = resultObject.optString("word");
+            if (!value.isEmpty()) {
+                return value;
+            }
+            return resultObject.optString("text");
+        }
+        return json.optString("result");
+    }
+
     private void handleTencentRealtimeMessage(String text) {
+        Log.d(TAG, "Tencent realtime message: " + compact(text));
         try {
             JSONObject json = new JSONObject(text);
             int code = json.optInt("code", 0);
@@ -2039,6 +2225,7 @@ public class MainActivity extends Activity {
     }
 
     private void handleAliyunRealtimeMessage(WebSocket webSocket, String text) {
+        Log.d(TAG, "Aliyun realtime message: " + compact(text));
         try {
             JSONObject json = new JSONObject(text);
             JSONObject header = json.optJSONObject("header");
