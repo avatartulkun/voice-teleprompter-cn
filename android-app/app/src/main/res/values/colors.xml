@@ -1,4 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- launcher -->
     <color name="ic_launcher_background">#0F8B8D</color>
+
+    <!-- 主题色（青绿色系，克制不炫） -->
+    <color name="primary_500">#0F8B8D</color>
+    <color name="primary_600">#0C7475</color>
+    <color name="primary_700">#095F60</color>
+    <color name="primary_50">#ECFAFA</color>
+
+    <!-- 危险色 -->
+    <color name="danger_500">#E85D3F</color>
+    <color name="danger_600">#C84A2E</color>
+
+    <!-- 高亮色（当前字背景） -->
+    <color name="highlight_400">#F2C660</color>
+
+    <!-- 中性文字色（WCAG对比度） -->
+    <color name="text_primary">#1A2029</color>
+    <color name="text_secondary">#55636A</color>
+    <color name="text_tertiary">#8FA3AC</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <!-- 分割线与边框 -->
+    <color name="divider">#E2EAEB</color>
+    <color name="border_subtle">#D6E0E1</color>
+
+    <!-- 页面背景 -->
+    <color name="bg_page">#F4F8F8</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="bg_chip">#EEF4F5</color>
+    <color name="bg_prompter">#141B21</color>
+    <color name="bg_prompter_text">#EBF0F2</color>
+    <color name="bg_prompter_read">#C54A2E</color>
 </resources>

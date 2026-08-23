@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">语音跟读提词器</string>
     <string name="title_main">语音跟读提词器 · AI跟读自动高亮</string>
@@ -13,10 +13,14 @@
     <string name="button_auto_scroll">滚动</string>
     <string name="button_stop_scroll">停止滚动</string>
     <string name="button_settings">设置</string>
+    <string name="button_speech_settings">语音识别设置</string>
     <string name="button_script">稿件</string>
     <string name="button_follow_settings">跟读设置</string>
     <string name="button_display_settings">显示设置</string>
     <string name="button_enter_prompter">进入提词</string>
+    <string name="button_float_prompter">悬浮窗提词</string>
+    <string name="button_camera_prompter">相机拍摄</string>
+    <string name="status_float_permission">需要悬浮窗权限，请在设置中开启「显示在其他应用上层」。</string>
     <string name="button_back_home">返回</string>
     <string name="status_ready">准备好后点击进入提词。</string>
     <string name="button_fullscreen">全屏</string>
@@ -30,6 +34,13 @@
     <string name="hint_baidu_app_id">语音识别 AppID</string>
     <string name="hint_baidu_secret_key">语音识别 Secret Key</string>
     <string name="label_speech_provider">语音服务商</string>
+    <string name="label_offline_mode">离线模式</string>
+    <string name="hint_offline_mode">开启后使用本机内置的中文模型识别，全程不联网、不上传音频，也无需配置云端密钥。首次启动跟读时会有 1–3 秒加载延迟。</string>
+    <string name="status_offline_starting">正在加载离线模型，请稍候。</string>
+    <string name="status_offline_listening">离线识别中，请开始朗读。</string>
+    <string name="status_offline_stopped">离线识别已停止。</string>
+    <string name="status_offline_failed">离线识别失败：</string>
+    <string name="status_offline_model_missing">未找到离线模型。请先把 vosk-model-small-cn 放入 app/src/main/assets/ 目录，再重新构建 APK。</string>
     <string name="hint_realtime_key_help">如何获取密钥：当前版本已实际验证腾讯云实时语音识别可用，建议优先选择腾讯云；百度智能云使用短语音识别模式，点击开始录音、点击暂停后识别并推进稿件；阿里云仍保留测试入口。请在对应平台开通语音识别服务，再按字段提示填写密钥。更详细步骤可点击下方“帮助/开通说明”。如有问题，可参考“关于与协议”中的联系方式，或点击首页右下角邮箱图标直接反馈。</string>
     <string name="button_open_realtime_doc">帮助/开通说明</string>
     <string name="realtime_open_help_intro">实时语音识别开通说明\n\n一、为什么要开通实时语音识别\n本软件需要边朗读边识别，才能根据识别结果自动高亮当前朗读位置。因此开通或购买时请选择“实时语音识别”，不要误选“实时语音转写”等不对应的服务。</string>
@@ -49,6 +60,8 @@
     <string name="label_color_speed">变色速度</string>
     <string name="label_auto_speed">卡住时自动推进</string>
     <string name="label_scroll_speed">滑动速度</string>
+    <string name="label_match_sensitivity">识别灵敏度</string>
+    <string name="hint_match_sensitivity">数值越大容错越高（适合口音/嘈杂环境），数值越小越精准。拼音匹配可容错同音字识别错误。</string>
     <string name="label_font_size">字体大小</string>
     <string name="label_read_color">已读颜色</string>
     <string name="label_current_color">当前字颜色</string>
@@ -101,8 +114,8 @@
     <string name="button_share_app">一键分享</string>
     <string name="status_no_email_app">未检测到可用的邮件应用，请手动发送邮件至 tulkun@foxmail.com。</string>
     <string name="feedback_email_subject">语音跟读提词器反馈</string>
-    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.4.1\n</string>
+    <string name="feedback_email_body">请在这里填写你的问题或建议：\n\n设备型号：\n系统版本：\n应用版本：v1.7.0\n</string>
     <string name="about_agreement_check">已阅读并同意用户协议和隐私政策</string>
-    <string name="about_content">版本号：v1.4.1\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
+    <string name="about_content">版本号：v1.7.0\n\n开源地址：\nhttps://github.com/avatartulkun/voice-teleprompter-cn\n\n用户协议：\n本软件仅供学习、测试和非商业用途使用。未经作者书面许可，不得用于商业产品、付费服务或商业分发。软件按现状提供，使用者需自行承担使用风险。\n\n隐私政策：\n本软件不收集、保存或上传任何个人隐私信息。本软件需要麦克风权限用于语音跟读识别；当你使用云端语音识别功能时，语音识别会连接你自行配置的第三方语音识别服务。离线模式下，语音识别完全在本地完成，不会上传任何音频或文字。请不要在稿件、朗读内容或识别内容中涉及身份证号、手机号、地址、账号密码、财务信息等个人隐私或敏感信息。\n\n联系方式：\ntulkun@foxmail.com</string>
 </resources>
 
